@@ -63,7 +63,8 @@ sh /tmp/install.sh /tmp/tailscale-1.102.4-arm64.tar.gz
 
 1. checks there is enough space (keeps 256 KB free, since JFFS2 misbehaves when full)
 2. stops the running daemon and replaces the binary
-3. adds the files to `/etc/sysupgrade.conf` so they survive firmware upgrades
+3. adds the small files (state, init script, `tailscale-update`) to
+   `/etc/sysupgrade.conf`; **not** the binary, see below
 4. creates a `tailscale` network interface and firewall zone (forwarding to/from `lan`) if missing
 5. enables and starts the service
 
@@ -150,8 +151,14 @@ The image keeps `kmod-tun` (Tailscale), SQM, nlbwmon, Wake-on-LAN and
 `luci-mod-rpc` (Home Assistant LuCI integration), and leaves out PPPoE (WAN is
 DHCP) and the collectd graphs, saving ~500 KB. Run `owut check` with the
 same flags first; if it reports a downgrade, look at it before adding
-`--force`. The Tailscale files are restored from `/etc/sysupgrade.conf` after
-the upgrade.
+`--force`.
+
+**After every firmware upgrade, run `tailscale-update`** to download the
+binary again (login state and config are kept). Do not add
+`/usr/sbin/tailscaled` to `/etc/sysupgrade.conf`: sysupgrade restores its
+backup archive into the overlay and unpacks it there, so the 4 MB binary needs
+~8 MB, fills the 5 MB overlay and breaks first boot (`/etc/board.json` is not
+written, so Wi-Fi does not come up, and the `/etc/uci-defaults` scripts fail).
 
 Only install packages with `apk add` if they are small: `/overlay` is ~5 MB
 and Tailscale uses 4.1 MB of it. LuCI's Wake on LAN page offers an

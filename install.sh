@@ -36,8 +36,12 @@ if [ -f "$(dirname "$0")/update.sh" ]; then
 	chmod 755 /usr/sbin/tailscale-update
 fi
 
-# Keep the manual install across firmware upgrades (/etc/config is kept anyway).
-for f in /usr/sbin/tailscaled /usr/sbin/tailscale /usr/sbin/tailscale-update /etc/init.d/tailscale /etc/rc.d/S80tailscale /etc/tailscale/; do
+# Keep the small files across firmware upgrades (/etc/config is kept anyway).
+# Not the binary: sysupgrade restores the backup archive into the overlay and
+# unpacks it there, so a 4 MB binary needs ~8 MB and fills a small flash,
+# breaking first boot. Run tailscale-update after a firmware upgrade instead.
+sed -i -e '\|^/usr/sbin/tailscaled$|d' -e '\|^/usr/sbin/tailscale$|d' /etc/sysupgrade.conf
+for f in /usr/sbin/tailscale-update /etc/init.d/tailscale /etc/rc.d/S80tailscale /etc/tailscale/; do
 	grep -qxF "$f" /etc/sysupgrade.conf || echo "$f" >> /etc/sysupgrade.conf
 done
 
