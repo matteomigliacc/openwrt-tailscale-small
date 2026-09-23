@@ -147,10 +147,11 @@ tailscale-update
 wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora luci-mod-dashboard" YES=1 sh
 ```
 
-The image keeps `kmod-tun` (Tailscale), SQM, nlbwmon, Wake-on-LAN and
+The image keeps `kmod-tun` (Tailscale), nlbwmon, Wake-on-LAN and
 `luci-mod-rpc` (Home Assistant LuCI integration), and leaves out PPPoE (WAN is
-DHCP) and the collectd graphs, saving ~500 KB (already removed, so they are no
-longer passed to `--remove`). `--force` is needed because the feed's
+DHCP), the collectd graphs and SQM (the line scores A+ on the Waveform
+bufferbloat test without it), saving ~800 KB. These are already removed, so
+they are no longer passed to `--remove`. `--force` is needed because the feed's
 `luci-mod-dashboard` is newer than the official one (reported as a downgrade)
 and because `owut` otherwise skips same-version rebuilds; run `owut check`
 first and make sure nothing else is listed. The install script re-adds the
