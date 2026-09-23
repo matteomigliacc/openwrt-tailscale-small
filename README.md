@@ -146,17 +146,17 @@ sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove $R; sed -i 's|^#\(
 wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora" YES=1 sh
 ```
 
-The image keeps `kmod-tun` (Tailscale), SQM, nlbwmon and `luci-mod-rpc`
-(Home Assistant LuCI integration) and Wake-on-LAN, and leaves out PPPoE (WAN is DHCP), the
-collectd graphs to save ~500 KB. Run `owut check` with the
+The image keeps `kmod-tun` (Tailscale), SQM, nlbwmon, Wake-on-LAN and
+`luci-mod-rpc` (Home Assistant LuCI integration), and leaves out PPPoE (WAN is
+DHCP) and the collectd graphs, saving ~500 KB. Run `owut check` with the
 same flags first; if it reports a downgrade, look at it before adding
 `--force`. The Tailscale files are restored from `/etc/sysupgrade.conf` after
 the upgrade.
 
 Only install packages with `apk add` if they are small: `/overlay` is ~5 MB
 and Tailscale uses 4.1 MB of it. LuCI's Wake on LAN page offers an
-"Install wakeonlan" button that pulls in Perl (several MB) and fills the flash
-- don't use it; `etherwake` is the built-in tool.
+"Install wakeonlan" button that pulls in Perl (several MB) and fills the
+flash. Don't use it; `etherwake` is the built-in tool.
 
 `tailscale up` warns that UDP GRO forwarding is suboptimal on `wan`; fixing it
 needs `ethtool` (no space), and it only affects throughput.
