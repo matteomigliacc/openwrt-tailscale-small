@@ -158,8 +158,8 @@ first and make sure nothing else is listed. The install script re-adds the
 feed line.
 
 Overlay budget after all of this: Tailscale 4.1 MB, Aurora ~360 KB, feed
-dashboard ~95 KB, apk database copy ~170 KB, ~440 KB free. That is enough for
-Tailscale updates; `luci-theme-shadcn` (~525 KB) and `luci-app-aurora-config`
+dashboard ~95 KB, apk database copy ~170 KB, ~840 KB free (5.6 MB overlay).
+That is enough for Tailscale updates; `luci-theme-shadcn` (~525 KB) and `luci-app-aurora-config`
 are left out because they would not leave room for one.
 
 **After every firmware upgrade, run `tailscale-update`** to download the
