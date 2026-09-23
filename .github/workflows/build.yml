@@ -1,0 +1,71 @@
+name: Build Tailscale
+
+# Daily: if tailscale/tailscale has a newer stable release than ours, build it
+# and publish it as a release of this repo.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tailscale version to build, e.g. 1.102.4 (default: latest stable)"
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  UPX_VERSION: 5.2.1
+  ARCH: arm64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick version
+        id: ver
+        run: |
+          v="${{ inputs.version }}"
+          if [ -z "$v" ]; then
+            v=$(gh release view --repo tailscale/tailscale --json tagName -q .tagName)
+          fi
+          v=${v#v}
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if gh release view "v$v" >/dev/null 2>&1; then
+            echo "v$v is already released, nothing to do"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install UPX
+        if: steps.ver.outputs.exists != 'true'
+        run: |
+          curl -fsSL "https://github.com/upx/upx/releases/download/v$UPX_VERSION/upx-$UPX_VERSION-amd64_linux.tar.xz" | tar -xJ
+          sudo install "upx-$UPX_VERSION-amd64_linux/upx" /usr/local/bin/upx
+          upx --version | head -1
+
+      - name: Build
+        if: steps.ver.outputs.exists != 'true'
+        run: |
+          v=${{ steps.ver.outputs.version }}
+          ./build.sh "$v" "$ARCH"
+          cp "dist/tailscale-$v-$ARCH.tar.gz" "dist/tailscale-$ARCH.tar.gz"
+          cp install.sh update.sh dist/
+          cd dist && sha256sum "tailscale-$v-$ARCH.tar.gz" "tailscale-$ARCH.tar.gz" install.sh update.sh > SHA256SUMS
+
+      - name: Release
+        if: steps.ver.outputs.exists != 'true'
+        run: |
+          v=${{ steps.ver.outputs.version }}
+          cd dist
+          gh release create "v$v" \
+            "tailscale-$v-$ARCH.tar.gz" "tailscale-$ARCH.tar.gz" install.sh update.sh SHA256SUMS \
+            --title "Tailscale $v ($ARCH)" \
+            --notes "Size-reduced Tailscale $v for OpenWrt ($ARCH), built from upstream tag v$v.
+          Upstream changelog: https://tailscale.com/changelog
+          Security bulletins: https://tailscale.com/security-bulletins
+
+          Update on the router: \`tailscale-update\` (see README)."

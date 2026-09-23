@@ -30,9 +30,14 @@ cp /tmp/tsroot/etc/init.d/tailscale /etc/init.d/tailscale
 [ -f /etc/config/tailscale ] || cp /tmp/tsroot/etc/config/tailscale /etc/config/tailscale
 mkdir -p /etc/tailscale
 rm -rf /tmp/tsroot
+# update.sh ships next to install.sh in releases
+if [ -f "$(dirname "$0")/update.sh" ]; then
+	cp "$(dirname "$0")/update.sh" /usr/sbin/tailscale-update
+	chmod 755 /usr/sbin/tailscale-update
+fi
 
 # Keep the manual install across firmware upgrades (/etc/config is kept anyway).
-for f in /usr/sbin/tailscaled /usr/sbin/tailscale /etc/init.d/tailscale /etc/rc.d/S80tailscale /etc/tailscale/; do
+for f in /usr/sbin/tailscaled /usr/sbin/tailscale /usr/sbin/tailscale-update /etc/init.d/tailscale /etc/rc.d/S80tailscale /etc/tailscale/; do
 	grep -qxF "$f" /etc/sysupgrade.conf || echo "$f" >> /etc/sysupgrade.conf
 done
 

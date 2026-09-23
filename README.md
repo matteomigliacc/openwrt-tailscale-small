@@ -80,18 +80,41 @@ In the [admin console](https://login.tailscale.com/admin/machines):
 
 ## Updating Tailscale
 
-Watch the [security bulletins](https://tailscale.com/security-bulletins) - the
-admin console also flags outdated nodes. Then:
+`apk upgrade` does **not** update this build.
+
+### Automatic builds
+
+[`.github/workflows/build.yml`](.github/workflows/build.yml) runs daily. When
+[tailscale/tailscale](https://github.com/tailscale/tailscale/releases) has a
+newer stable release than this repo, it builds it and publishes a release here
+with `tailscale-arm64.tar.gz`, `install.sh`, `update.sh` and `SHA256SUMS`.
+Watch this repo's releases (Watch → Custom → Releases) to get notified.
+A specific version can be built via Actions → Build Tailscale → Run workflow.
+
+GitHub disables scheduled workflows after 60 days without repo activity; it
+emails a warning and can be re-enabled from the Actions tab.
+
+### On the router
+
+`install.sh` installs `update.sh` as `/usr/sbin/tailscale-update`. It compares
+the running version with the latest release, downloads the bundle, verifies
+the checksums, and runs `install.sh`:
 
 ```sh
-git ls-remote --tags https://github.com/tailscale/tailscale.git 'v1.*' | tail
+tailscale-update
+```
+
+This is deliberately manual: writing 4 MB to a nearly full JFFS2 flash takes a
+minute or two, and the router's Tailscale is offline meanwhile.
+
+### Manual build
+
+```sh
 ./build.sh <new-version>
-scp -O dist/tailscale-<new-version>-arm64.tar.gz install.sh root@192.168.1.1:/tmp/
+scp -O dist/tailscale-<new-version>-arm64.tar.gz install.sh update.sh root@192.168.1.1:/tmp/
 # on the router:
 sh /tmp/install.sh /tmp/tailscale-<new-version>-arm64.tar.gz
 ```
-
-`apk upgrade` does **not** update this build.
 
 ## Features left out
 
