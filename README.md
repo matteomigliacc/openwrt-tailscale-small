@@ -141,10 +141,11 @@ build server, so firmware upgrades temporarily comment it out:
 
 ```sh
 F=/etc/apk/repositories.d/customfeeds.list
-sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove luci-theme-aurora --force
+sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove luci-theme-aurora,luci-app-tailscale-community,tailscale --force
 # the router reboots mid-command, so the feed line stays commented out; afterwards:
 tailscale-update
 wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora luci-mod-dashboard" YES=1 sh
+apk add --virtual tailscale && apk add luci-app-tailscale-community
 ```
 
 The image keeps `kmod-tun` (Tailscale), nlbwmon, Wake-on-LAN and
@@ -168,6 +169,25 @@ binary again (login state and config are kept). Do not add
 backup archive into the overlay and unpacks it there, so the 4 MB binary needs
 ~8 MB, fills the 5 MB overlay and breaks first boot (`/etc/board.json` is not
 written, so Wi-Fi does not come up, and the `/etc/uci-defaults` scripts fail).
+
+### LuCI app
+
+The official `luci-app-tailscale-community` depends on `tailscale`, which would
+pull in the full 30 MB package and overwrite this build. An empty virtual
+package satisfies the dependency (its date-based version sorts above upstream,
+so `apk upgrade` leaves it alone):
+
+```sh
+apk add --virtual tailscale && apk add luci-app-tailscale-community
+```
+
+The app applies all settings in one `tailscale set` call on Save, so the
+"Advertise routes" field must contain the LAN subnet, or the route is dropped.
+Tailscale SSH, web client, exit node and MagicDNS are not in this build; leave
+them off. Both packages must be passed to `owut --remove`, otherwise the build
+server tries to add the official `tailscale` to the image.
+
+### Space
 
 Only install packages with `apk add` if they are small: `/overlay` is ~5 MB
 and Tailscale uses 4.1 MB of it. LuCI's Wake on LAN page offers an
