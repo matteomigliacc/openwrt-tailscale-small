@@ -141,11 +141,10 @@ build server, so firmware upgrades temporarily comment it out:
 
 ```sh
 F=/etc/apk/repositories.d/customfeeds.list
-sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove luci-theme-aurora,luci-app-tailscale-community,tailscale --force
+sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove luci-theme-aurora --force
 # the router reboots mid-command, so the feed line stays commented out; afterwards:
 tailscale-update
 wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora luci-mod-dashboard" YES=1 sh
-apk add --virtual tailscale && apk add luci-app-tailscale-community
 ```
 
 The image keeps `kmod-tun` (Tailscale), nlbwmon, Wake-on-LAN and
@@ -170,22 +169,21 @@ backup archive into the overlay and unpacks it there, so the 4 MB binary needs
 ~8 MB, fills the 5 MB overlay and breaks first boot (`/etc/board.json` is not
 written, so Wi-Fi does not come up, and the `/etc/uci-defaults` scripts fail).
 
-### LuCI app
+### LuCI app (not used)
 
-The official `luci-app-tailscale-community` depends on `tailscale`, which would
-pull in the full 30 MB package and overwrite this build. An empty virtual
-package satisfies the dependency (its date-based version sorts above upstream,
-so `apk upgrade` leaves it alone):
+`luci-app-tailscale-community` can be installed next to this build with an
+empty virtual package (`apk add --virtual tailscale`), since it depends on the
+official 30 MB `tailscale`. It was removed again: its Save button applies every
+option in one `tailscale set`, and ticking "Accept Routes" on this subnet
+router made it route its own LAN (`192.168.1.0/24`, also advertised by another
+node) into `tailscale0`, which broke the LAN; the same Save also replaced the
+advertised routes with an exit node. On a subnet router, `--accept-routes`
+must stay off. Use the CLI instead:
 
 ```sh
-apk add --virtual tailscale && apk add luci-app-tailscale-community
+tailscale set --accept-routes=false --advertise-routes=192.168.1.0/24
+tailscale debug prefs | grep -E 'RouteAll|AdvertiseRoutes' -A2
 ```
-
-The app applies all settings in one `tailscale set` call on Save, so the
-"Advertise routes" field must contain the LAN subnet, or the route is dropped.
-Tailscale SSH, web client, exit node and MagicDNS are not in this build; leave
-them off. Both packages must be passed to `owut --remove`, otherwise the build
-server tries to add the official `tailscale` to the image.
 
 ### Space
 
