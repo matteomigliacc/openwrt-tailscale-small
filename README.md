@@ -140,15 +140,15 @@ build server, so firmware upgrades temporarily comment it out:
 
 ```sh
 F=/etc/apk/repositories.d/customfeeds.list
-R=luci-theme-aurora,ppp,ppp-mod-pppoe,kmod-ppp,kmod-pppoe,kmod-pppox,kmod-slhc,collectd,collectd-mod-cpu,collectd-mod-interface,collectd-mod-iwinfo,collectd-mod-load,collectd-mod-memory,collectd-mod-network,collectd-mod-rrdtool,luci-app-statistics,luci-app-wol,etherwake
+R=luci-theme-aurora,ppp,ppp-mod-pppoe,kmod-ppp,kmod-pppoe,kmod-pppox,kmod-slhc,collectd,collectd-mod-cpu,collectd-mod-interface,collectd-mod-iwinfo,collectd-mod-load,collectd-mod-memory,collectd-mod-network,collectd-mod-rrdtool,luci-app-statistics
 sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove $R; sed -i 's|^#\(.*eamonxg.*\)$|\1|' $F
 # afterwards, reinstall the theme:
 wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora" YES=1 sh
 ```
 
 The image keeps `kmod-tun` (Tailscale), SQM, nlbwmon and `luci-mod-rpc`
-(Home Assistant LuCI integration), and leaves out PPPoE (WAN is DHCP), the
-collectd graphs and Wake-on-LAN to save ~500 KB. Run `owut check` with the
+(Home Assistant LuCI integration) and Wake-on-LAN, and leaves out PPPoE (WAN is DHCP), the
+collectd graphs to save ~500 KB. Run `owut check` with the
 same flags first; if it reports a downgrade, look at it before adding
 `--force`. The Tailscale files are restored from `/etc/sysupgrade.conf` after
 the upgrade.
