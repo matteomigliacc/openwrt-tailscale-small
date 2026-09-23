@@ -141,17 +141,25 @@ build server, so firmware upgrades temporarily comment it out:
 
 ```sh
 F=/etc/apk/repositories.d/customfeeds.list
-R=luci-theme-aurora,ppp,ppp-mod-pppoe,kmod-ppp,kmod-pppoe,kmod-pppox,kmod-slhc,collectd,collectd-mod-cpu,collectd-mod-interface,collectd-mod-iwinfo,collectd-mod-load,collectd-mod-memory,collectd-mod-network,collectd-mod-rrdtool,luci-app-statistics
-sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove $R; sed -i 's|^#\(.*eamonxg.*\)$|\1|' $F
-# afterwards, reinstall the theme:
-wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora" YES=1 sh
+sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove luci-theme-aurora --force
+# the router reboots mid-command, so the feed line stays commented out; afterwards:
+tailscale-update
+wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora luci-mod-dashboard" YES=1 sh
 ```
 
 The image keeps `kmod-tun` (Tailscale), SQM, nlbwmon, Wake-on-LAN and
 `luci-mod-rpc` (Home Assistant LuCI integration), and leaves out PPPoE (WAN is
-DHCP) and the collectd graphs, saving ~500 KB. Run `owut check` with the
-same flags first; if it reports a downgrade, look at it before adding
-`--force`.
+DHCP) and the collectd graphs, saving ~500 KB (already removed, so they are no
+longer passed to `--remove`). `--force` is needed because the feed's
+`luci-mod-dashboard` is newer than the official one (reported as a downgrade)
+and because `owut` otherwise skips same-version rebuilds; run `owut check`
+first and make sure nothing else is listed. The install script re-adds the
+feed line.
+
+Overlay budget after all of this: Tailscale 4.1 MB, Aurora ~360 KB, feed
+dashboard ~95 KB, apk database copy ~170 KB, ~440 KB free. That is enough for
+Tailscale updates; `luci-theme-shadcn` (~525 KB) and `luci-app-aurora-config`
+are left out because they would not leave room for one.
 
 **After every firmware upgrade, run `tailscale-update`** to download the
 binary again (login state and config are kept). Do not add
