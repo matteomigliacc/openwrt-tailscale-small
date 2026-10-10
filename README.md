@@ -105,8 +105,15 @@ the checksums, and runs `install.sh`:
 tailscale-update
 ```
 
-This is deliberately manual: writing 4 MB to a nearly full JFFS2 flash takes a
-minute or two, and the router's Tailscale is offline meanwhile.
+`install.sh` also schedules it, so updates happen without intervention:
+
+- **weekly** via cron, Sunday 03:30 (`/etc/crontabs/root`); a no-op when up to date
+- **after boot**, if the binary is missing (i.e. after a firmware upgrade), via `/etc/rc.local`
+
+Both files survive sysupgrade. Output goes to the system log
+(`logread -e tailscale-update`). Writing 4 MB to the nearly full JFFS2 flash
+takes a minute or two and the router's Tailscale is offline meanwhile; with a
+second subnet router advertising the same route, Tailscale fails over to it.
 
 ### Manual build
 
@@ -142,8 +149,9 @@ build server, so firmware upgrades temporarily comment it out:
 ```sh
 F=/etc/apk/repositories.d/customfeeds.list
 sed -i 's|^\(.*eamonxg.*\)$|#\1|' $F && owut upgrade --remove luci-theme-aurora --force
-# the router reboots mid-command, so the feed line stays commented out; afterwards:
-tailscale-update
+# the router reboots mid-command, so the feed line stays commented out.
+# Tailscale reinstalls itself ~2 minutes after boot; wait for it before adding packages:
+logread -e tailscale-update; tailscale version
 wget -qO- https://openwrt.eamonxg.fun/install.sh | PKGS="luci-theme-aurora luci-mod-dashboard" YES=1 sh
 ```
 
@@ -162,8 +170,9 @@ dashboard ~95 KB, apk database copy ~170 KB, ~840 KB free (5.6 MB overlay).
 That is enough for Tailscale updates; `luci-theme-shadcn` (~525 KB) and `luci-app-aurora-config`
 are left out because they would not leave room for one.
 
-**After every firmware upgrade, run `tailscale-update`** to download the
-binary again (login state and config are kept). Do not add
+**After every firmware upgrade, the binary is downloaded again automatically**
+~2 minutes after boot (login state and config are kept); `tailscale-update`
+does the same by hand. Do not add
 `/usr/sbin/tailscaled` to `/etc/sysupgrade.conf`: sysupgrade restores its
 backup archive into the overlay and unpacks it there, so the 4 MB binary needs
 ~8 MB, fills the 5 MB overlay and breaks first boot (`/etc/board.json` is not

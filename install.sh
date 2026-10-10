@@ -45,6 +45,22 @@ for f in /usr/sbin/tailscale-update /etc/init.d/tailscale /etc/rc.d/S80tailscale
 	grep -qxF "$f" /etc/sysupgrade.conf || echo "$f" >> /etc/sysupgrade.conf
 done
 
+# Automatic updates: weekly via cron, and after boot if a firmware upgrade
+# removed the binary. /etc/crontabs and /etc/rc.local survive sysupgrade.
+if [ -x /usr/sbin/tailscale-update ]; then
+	if ! grep -q tailscale-update /etc/crontabs/root 2>/dev/null; then
+		cat >> /etc/crontabs/root <<-'EOF'
+		# Weekly Tailscale update (openwrt-tailscale-small), Sunday 03:30. No-op when up to date.
+		30 3 * * 0 /usr/sbin/tailscale-update 2>&1 | logger -t tailscale-update
+		EOF
+		/etc/init.d/cron enable
+		/etc/init.d/cron restart
+	fi
+	if ! grep -q tailscale-update /etc/rc.local; then
+		sed -i 's|^exit 0$|# Reinstall Tailscale after a firmware upgrade wiped the binary (openwrt-tailscale-small)\n( sleep 120; [ -x /usr/sbin/tailscaled ] \|\| /usr/sbin/tailscale-update 2>\&1 \| logger -t tailscale-update ) \&\n\nexit 0|' /etc/rc.local
+	fi
+fi
+
 # Network interface + firewall zone so tailnet traffic may reach the LAN.
 reload=0
 if ! uci -q get network.tailscale >/dev/null; then
