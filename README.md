@@ -142,7 +142,8 @@ Dropping `netstack`, `gro` or `portlist` saves almost nothing (<30 KB packed).
 
 > **2026-11-24: no longer used on this router.** Tailscale was removed and the official `nextdns`
 > package installed instead (LAN-wide NextDNS). Container 103 on Proxmox is now the only subnet router.
-> The firmware notes below still apply, minus the Tailscale parts. Releases keep building for other uses.
+> The firmware notes below still apply, minus the Tailscale parts. The daily build workflow is disabled
+> (re-enable: `gh workflow enable "Build Tailscale"`).
 
 To make room, the firmware was rebuilt without the 3.4 MB `nextdns` package
 (NextDNS is configured on the clients and in Tailscale instead), with small
