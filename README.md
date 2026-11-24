@@ -140,6 +140,10 @@ Dropping `netstack`, `gro` or `portlist` saves almost nothing (<30 KB packed).
 
 ## Notes for this router (Cudy WR3000 v1)
 
+> **2026-11-24: no longer used on this router.** Tailscale was removed and the official `nextdns`
+> package installed instead (LAN-wide NextDNS). Container 103 on Proxmox is now the only subnet router.
+> The firmware notes below still apply, minus the Tailscale parts. Releases keep building for other uses.
+
 To make room, the firmware was rebuilt without the 3.4 MB `nextdns` package
 (NextDNS is configured on the clients and in Tailscale instead), with small
 extras baked into the image so they don't use overlay space. The third-party
